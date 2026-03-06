@@ -10,6 +10,9 @@ const registerAccount = async (req, res) => {
         if (err.type === 'AUTH_USERNAME_TAKEN') {
             return res.status(400).json({ message: err.message });
         }
+        if (err.type === 'AUTH_UNAUTHORIZED') {
+            return res.status(403).json({ message: err.message });
+        }
         return res.status(500).json({ message: 'Internal server error.' });
     }
 };

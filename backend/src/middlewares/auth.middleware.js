@@ -24,6 +24,7 @@ const authorizeRoles = (...allowedRoles) => {
             return res.status(401).json({ message: 'Unauthorized.' });
         }
         if (!allowedRoles.includes(req.user.role)) {
+            console.log(`User role: '${req.user.role}' | Allowed roles: ${allowedRoles.join(', ')}`); // DEBUG
             return res.status(403).json({ message: 'Forbidden: You do not have permission to access this resource.' });
         }
         next();
