@@ -6,7 +6,13 @@ const { authenticateToken, authorizeRoles } = require('../../middlewares/auth.mi
 // Controllers
 const reportController = require('./reports.controller');
 
-// Routes
+// Public Routes
 router.post('/new', reportController.newReport);
+
+router.get('/', reportController.getAllReports);
+router.get('/:report_id', reportController.getReportById);
+
+// Protected Routes
+
 
 module.exports = router;
