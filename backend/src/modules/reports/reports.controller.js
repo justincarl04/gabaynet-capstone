@@ -1,4 +1,3 @@
-const { get } = require('./reports.routes');
 const reportService = require('./reports.service');
 
 const newReport = async (req, res) => {
@@ -7,9 +6,14 @@ const newReport = async (req, res) => {
         return res.status(400).json({ message: 'Title and Category are required.' });
     }
 
-    console.log("Creating report with data: ", req.body); // DEBUG
+    const reportData = {
+        ...req.body,
+        image_url: req.file ? (req.file.location || `/uploads/${req.file.filename}`) : null
+    };
+
+    console.log("Creating report with data: ", reportData); // DEBUG
     try {
-        const report = await reportService.createReport(req.body);
+        const report = await reportService.createReport(reportData, req.file);
         res.status(201).json(report);
     } catch (err) {
         if (err.code === '23503') { 
