@@ -2,14 +2,28 @@ const pool = require('../../config/db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
-const createReport = async (data) => {
-    const { title, description, category_id, location, image_url, reporter_contact } = data;
-    
-    const query = 'INSERT INTO reports (title, description, category_id, location, image_url, reporter_contact) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *';
-    const values = [title, description, category_id, location, image_url, reporter_contact];
+const { DeleteObjectCommand } = require("@aws-sdk/client-s3");
+const s3 = require("../../config/s3");
 
-    const result = await pool.query(query, values);
-    return result.rows[0];
+const createReport = async (data, fileData) => {
+    try{
+        const { title, description, category_id, location, image_url, reporter_contact } = data;
+        
+        const query = 'INSERT INTO reports (title, description, category_id, location, image_url, reporter_contact) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *';
+        const values = [title, description, category_id, location, image_url, reporter_contact];
+
+        const result = await pool.query(query, values);
+        return result.rows[0];
+    } catch (err) {
+        if (fileData) {
+            await s3.send(new DeleteObjectCommand({
+                Bucket: process.env.AWS_BUCKET_NAME,
+                Key: fileData.key
+            }));
+            console.log("Deleted uploaded file from S3 due to error during report creation: ", fileData.key); // DEBUG
+        }
+        throw err;
+    }
 };
 
 const getAllReports = async (query) => {
