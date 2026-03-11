@@ -1,6 +1,7 @@
 const pool = require('../../config/db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const logger = require('../../utils/logger');
 
 const { DeleteObjectCommand } = require("@aws-sdk/client-s3");
 const s3 = require("../../config/s3");
@@ -20,7 +21,7 @@ const createReport = async (data, fileData) => {
                 Bucket: process.env.AWS_BUCKET_NAME,
                 Key: fileData.key
             }));
-            console.log("Deleted uploaded file from S3 due to error during report creation: ", fileData.key); // DEBUG
+            logger.info("Deleted uploaded file from S3 due to error during report creation: ", fileData.key); // DEBUG
         }
         throw err;
     }
