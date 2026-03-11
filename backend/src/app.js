@@ -5,11 +5,12 @@ const helmet = require('helmet');
 
 const app = express();
 
-const reportRoutes = require('./modules/reports/reports.routes');
-
-app.use(helmet());
 app.use(cors());
+app.use(helmet());
 app.use(express.json());
+
+const authRoutes = require('./modules/auth/auth.routes');
+const reportRoutes = require('./modules/reports/reports.routes');
 
 app.get('/', (req, res) => {
     res.send('API is running.');
@@ -26,5 +27,6 @@ app.get('/health', async (req, res) => {
 })
 
 app.use('/api/reports', reportRoutes);
+app.use('/api/auth', authRoutes);
 
 module.exports = app;
