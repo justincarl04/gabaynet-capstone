@@ -53,8 +53,40 @@ const getReportById = async (req, res, next) => {
     }
 };
 
+const claimReport = async (req, res, next) => {
+    logger.debug('Claiming report with ID: ', req.params.report_id, ' by user: ', req.user.id); // DEBUG
+    try {
+        const report = await reportService.claimReport(req.params.report_id, req.user.id);
+        res.json(report);
+    } catch (err) {
+        if (err.type === 'REPORT_CLAIM_FAILED'){
+            logger.warn("Report not found or already claimed for: ", { report_id: req.params.report_id }); // DEBUG
+            return res.status(404).json({ message: err.message });
+        }
+        err.userMessage = 'Failed to claim report.';
+        next(err);
+    }
+}
+
+const resolveReport = async (req, res, next) => {
+    logger.debug('Resolving report with ID: ', req.params.report_id, ' by user: ', req.user.id);
+    try {
+        const report = await reportService.resolveReport(req.params.report_id, req.user.id);
+        res.json(report);
+    } catch (err) {
+        if (err.type === 'REPORT_NOT_FOUND'){
+            logger.warn("Report not found for resolving: ", { report_id: req.params.report_id }); // DEBUG
+            return res.status(404).json({ message: err.message });
+        }
+        err.userMessage = 'Failed to resolve report.';
+        next(err);
+    }
+}
+
 module.exports = {
     newReport,
     getAllReports,
-    getReportById
+    getReportById,
+    claimReport,
+    resolveReport
 };

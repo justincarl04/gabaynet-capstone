@@ -35,13 +35,14 @@ const getAllReports = async (query) => {
         category_id,
         status, 
         title, 
+        handler_name,
         from, 
         to, 
         sort = 'submitted_at', 
         order = '' 
     } = query;
 
-    let baseQuery = 'SELECT r.report_id, r.title, r.status, r.updated_at, r.submitted_at, c.name AS category_name, COUNT(*) OVER() AS total_count FROM reports r JOIN categories c ON r.category_id = c.category_id';
+    let baseQuery = 'SELECT r.report_id, r.title, r.status, r.updated_at, r.submitted_at, c.name AS category_name, u.username AS handler_name, COUNT(*) OVER() AS total_count FROM reports r JOIN categories c ON r.category_id = c.category_id LEFT JOIN users u ON r.handler_id = u.user_id';
     const conditions = [];
     const values = [];
     if (category) {
@@ -59,6 +60,10 @@ const getAllReports = async (query) => {
     if (title) {
         values.push(`%${title}%`);
         conditions.push(`r.title ILIKE $${values.length}`);
+    }
+    if (handler_name) {
+        values.push(`%${handler_name}%`);
+        conditions.push(`u.username ILIKE $${values.length}`);
     }
     if (from) {
         values.push(from);
@@ -93,7 +98,7 @@ const getAllReports = async (query) => {
 };
 
 const getReportById = async (report_id) => {
-    const query = 'SELECT r.*, c.name AS category_name FROM reports r JOIN categories c ON r.category_id = c.category_id WHERE r.report_id = $1';
+    const query = 'SELECT r.*, c.name AS category_name, u.username AS handler_name FROM reports r JOIN categories c ON r.category_id = c.category_id LEFT JOIN users u ON r.handler_id = u.user_id WHERE r.report_id = $1';
     const result = await pool.query(query, [report_id]);
 
     if (!result.rows[0]){
@@ -104,8 +109,37 @@ const getReportById = async (report_id) => {
     return result.rows[0];
 };
 
+const claimReport = async (report_id, user_id) => {
+    const query = "UPDATE reports SET handler_id = $1, status = $2, updated_at = NOW() WHERE report_id = $3 AND status = 'pending' RETURNING *";
+    const values = [user_id, 'in_progress', report_id];
+    const result = await pool.query(query, values);
+
+    if (!result.rows[0]){
+        const err = new Error('Report not found or already claimed.');
+        err.type = 'REPORT_CLAIM_FAILED';
+        throw err;
+    }
+    return result.rows[0];
+}
+
+const resolveReport = async (report_id, user_id) => {
+    // user_id is for future use, for audit logging.
+    const query = 'UPDATE reports SET status = $1, updated_at = NOW() WHERE report_id = $2 RETURNING *';
+    const values = ['resolved', report_id];
+    const result = await pool.query(query, values);
+
+    if (!result.rows[0]){
+        const err = new Error('There is no report with this id.');
+        err.type = 'REPORT_NOT_FOUND';
+        throw err;
+    }
+    return result.rows[0];
+}
+
 module.exports = {
     createReport,
     getAllReports,
-    getReportById
+    getReportById,
+    claimReport,
+    resolveReport
 };

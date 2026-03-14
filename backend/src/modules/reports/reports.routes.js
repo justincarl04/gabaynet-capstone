@@ -15,6 +15,7 @@ router.get('/', reportController.getAllReports);
 router.get('/:report_id', reportController.getReportById);
 
 // Protected Routes
-
+router.patch('/:report_id/claim', authenticateToken, authorizeRoles('staff', 'admin', 'super_admin'), reportController.claimReport);
+router.patch('/:report_id/resolve', authenticateToken, authorizeRoles('staff', 'admin', 'super_admin'), reportController.resolveReport);
 
 module.exports = router;
