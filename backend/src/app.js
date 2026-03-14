@@ -2,8 +2,9 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const { loadSecrets } = require('./config/secrets');
 
-const pool = require('./config/db');
+const { getPool } = require('./config/db');
 const logger = require('./utils/logger');
 
 const app = express();
@@ -15,10 +16,14 @@ const stream = {
     write: (message) => logger.info(message.trim()),
 };
 
+loadSecrets().catch((err) => {
+    logger.error('Failed to load secrets: ', err);
+    process.exit(1);
+});
+
 app.use(cors());
 app.use(helmet());
 app.use(express.json());
-
 app.use(morgan('combined', { stream }));
 
 app.get('/', (req, res) => {
@@ -26,12 +31,16 @@ app.get('/', (req, res) => {
 });
 
 app.get('/health', async (req, res) => {
+    const pool = getPool();
+    const client = await pool.connect();
     try {
-        await pool.query('SELECT 1');
+        await client.query('SELECT 1');
         res.json({ status: 'ok' });
     } catch (err) {
         console.error('Database connection failed: ', err); // DEBUG
         res.status(500).json({ status: 'error', message: 'Database connection failed' });
+    } finally {
+        client.release();
     }
 })
 
