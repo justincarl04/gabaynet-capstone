@@ -1,3 +1,15 @@
 node_modules
 .env
-uploads/*
+*.log
+
+# AWS SAM build artifacts
+.aws-sam/
+backend/.aws-sam/
+
+# Node and local artifacts
+logs/
+backend/logs/
+
+# Uploaded file content
+uploads/
+backend/uploads/
