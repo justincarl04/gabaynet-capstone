@@ -1,3 +1,33 @@
+---- CONTENTS
+
+-- CATEGORIES
+category_id         =   int | serial | pk
+name                =   string | 100 max | unique
+description         =   string | optional
+
+-- USERS
+user_id             =   int | serial | pl
+username            =   string | 100 max | unique 
+email               =   string | 255 max | unique
+password_hash       =   hash string
+role                =   enum | staff, admin, super_admin | default: staff
+created_at          =   timestamp
+
+-- REPORTS
+report_id           =   int | serial | pk
+handler_id          =   int | foreign key = users(user_id) | start as null
+category_id         =   int | foreign key = categories(category_id)
+reporter_contact    =   string | 255 max | optional
+title               =   string  
+description         =   string | optional
+image_url           =   string url | optional
+location            =   string | optional
+status              =   enum | pending, in-progress, resolved | default: pending 
+submitted_at        =   timestamp
+updated_at          =   timestamp 
+
+---- QUERIES
+
 -- TYPES
 DO $$ 
 BEGIN
@@ -40,25 +70,3 @@ CREATE TABLE IF NOT EXISTS reports (
     submitted_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
-
--- SEED CATEGORIES
-INSERT INTO categories (name, description)
-VALUES
-  ('Infrastructure & Mainentance', 'For physical damage or public facility issues'),
-  ('Environment & Waste', 'For environmental or sanitation concerns'),
-  ('Utilities & Resources', 'Issues related to basic services'),
-  ('Traffic & Parking', 'For vehicle-related problems inside the subdivision'),
-  ('Animals & Pests', 'For stray/wild animals or pest infestations'),
-  ('Safety & Security', 'Anything that may threaten residents'),
-  ('Other', 'For anything that does not fall in other categories')
-ON CONFLICT (category_id) DO UPDATE
-  SET name = EXCLUDED.name,
-      description = EXCLUDED.description;
-
--- SEED FIRST SUPER ADMIN USER
-INSERT INTO users (username, email, password_hash, role)
-VALUES
-  ('SysAdmin', 'gabaynet@gmail.com', '$2b$12$9sR7YE5SrWK9Sw8bqtMCGuVxwVD7ooc1ecKjVFSxzjKfQX3ykzEuG', 'super_admin')
-ON CONFLICT (email) DO UPDATE
-  SET username = EXCLUDED.username,
-      role = EXCLUDED.role;
