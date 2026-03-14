@@ -1,19 +1,19 @@
-const pool = require('../../config/db');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
+const { getPool } = require('../../config/db');
 const logger = require('../../utils/logger');
 
-const { DeleteObjectCommand } = require("@aws-sdk/client-s3");
-const s3 = require("../../config/s3");
+const { DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const s3 = require('../../config/s3');
 
 const createReport = async (data, fileData) => {
+    const pool = getPool();
+    const client = await pool.connect();
     try{
         const { title, description, category_id, location, image_url, reporter_contact } = data;
         
         const query = 'INSERT INTO reports (title, description, category_id, location, image_url, reporter_contact) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *';
         const values = [title, description, category_id, location, image_url, reporter_contact];
 
-        const result = await pool.query(query, values);
+        const result = await client.query(query, values);
         return result.rows[0];
     } catch (err) {
         if (fileData) {
@@ -24,10 +24,14 @@ const createReport = async (data, fileData) => {
             logger.info("Deleted uploaded file from S3 due to error during report creation: ", fileData.key); // DEBUG
         }
         throw err;
+    } finally {
+        client.release();
     }
 };
 
 const getAllReports = async (query) => {
+    const pool = getPool();
+    const client = await pool.connect();
     const { 
         page = 1, 
         limit = 10, 
@@ -80,60 +84,81 @@ const getAllReports = async (query) => {
     baseQuery += ` ORDER BY r.${sort} ${order} LIMIT $${values.length + 1} OFFSET $${values.length + 2}`;
     values.push(limit, (page - 1) * limit);
 
-    const result = await pool.query(baseQuery, values);
-    const reports = result.rows;
-    const totalCount = reports.length > 0 ? parseInt(reports[0].total_count) : 0;
+    try{
+        const result = await client.query(baseQuery, values);
+        const reports = result.rows;
+        const totalCount = reports.length > 0 ? parseInt(reports[0].total_count) : 0;
 
-    return {
-        data: reports,
-        meta: {
-            totalCount: totalCount,
-            totalPages: Math.ceil(totalCount / limit),
-            currentPage: parseInt(page),
-            limit: parseInt(limit),
-            hasNextPage: page * limit < totalCount,
-            hasPreviousPage: page > 1
+        return {
+            data: reports,
+            meta: {
+                totalCount: totalCount,
+                totalPages: Math.ceil(totalCount / limit),
+                currentPage: parseInt(page),
+                limit: parseInt(limit),
+                hasNextPage: page * limit < totalCount,
+                hasPreviousPage: page > 1
+            }
         }
+    }  finally {
+        client.release();
     }
 };
 
 const getReportById = async (report_id) => {
+    const pool = getPool();
+    const client = await pool.connect();
     const query = 'SELECT r.*, c.name AS category_name, u.username AS handler_name FROM reports r JOIN categories c ON r.category_id = c.category_id LEFT JOIN users u ON r.handler_id = u.user_id WHERE r.report_id = $1';
-    const result = await pool.query(query, [report_id]);
-
-    if (!result.rows[0]){
-        const err = new Error('There is no report with this id.');
-        err.type = 'REPORT_NOT_FOUND';
-        throw err;
+    
+    try{
+        const result = await client.query(query, [report_id]);
+        if (!result.rows[0]){
+            const err = new Error('There is no report with this id.');
+            err.type = 'REPORT_NOT_FOUND';
+            throw err;
+        }
+        return result.rows[0];   
+    } finally {
+        client.release();
     }
-    return result.rows[0];
 };
 
 const claimReport = async (report_id, user_id) => {
+    const pool = getPool();
+    const client = await pool.connect();
     const query = "UPDATE reports SET handler_id = $1, status = $2, updated_at = NOW() WHERE report_id = $3 AND status = 'pending' RETURNING *";
     const values = [user_id, 'in_progress', report_id];
-    const result = await pool.query(query, values);
-
-    if (!result.rows[0]){
-        const err = new Error('Report not found or already claimed.');
-        err.type = 'REPORT_CLAIM_FAILED';
-        throw err;
+    try{
+        const result = await client.query(query, values);
+        if (!result.rows[0]){
+            const err = new Error('Report not found or already claimed.');
+            err.type = 'REPORT_CLAIM_FAILED';
+            throw err;
+        }
+        return result.rows[0];
+    } finally {
+        client.release();
     }
-    return result.rows[0];
 }
 
 const resolveReport = async (report_id, user_id) => {
+    const pool = getPool();
+    const client = await pool.connect();
     // user_id is for future use, for audit logging.
     const query = 'UPDATE reports SET status = $1, updated_at = NOW() WHERE report_id = $2 RETURNING *';
     const values = ['resolved', report_id];
-    const result = await pool.query(query, values);
-
-    if (!result.rows[0]){
-        const err = new Error('There is no report with this id.');
-        err.type = 'REPORT_NOT_FOUND';
-        throw err;
+    
+    try{
+        const result = await client.query(query, values);
+        if (!result.rows[0]){
+            const err = new Error('There is no report with this id.');
+            err.type = 'REPORT_NOT_FOUND';
+            throw err;
+        }
+        return result.rows[0];
+    } finally {
+        client.release();
     }
-    return result.rows[0];
 }
 
 module.exports = {

@@ -1,4 +1,4 @@
-const pool = require('../../config/db');
+const { getPool } = require('../../config/db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
@@ -11,11 +11,16 @@ const generateToken = (payload) => {
 };
 
 const getUserByUsername = async (username) => {
-    const query = 'SELECT * FROM users WHERE username = $1';
-    const values = [username];
-    const result = await pool.query(query, values);
-
-    return result.rows[0];
+    const pool = getPool();
+    const client = await pool.connect();
+    try {
+        const query = 'SELECT * FROM users WHERE username = $1';
+        const values = [username];
+        const result = await client.query(query, values);
+        return result.rows[0];
+    } finally {
+        client.release();
+    }
 };
 
 const verifyPassword = async (password, hashedPassword) => {
@@ -50,11 +55,16 @@ const createAccount = async (client, data) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const query = 'INSERT INTO users (username, password_hash, email, role) VALUES ($1, $2, $3, $4) RETURNING user_id, username, email, role';
-    const values = [username, hashedPassword, email, role];
-    const result = await pool.query(query, values);
-
-    return result.rows[0];
+    const pool = getPool();
+    const dbClient = await pool.connect();
+    try {
+        const query = 'INSERT INTO users (username, password_hash, email, role) VALUES ($1, $2, $3, $4) RETURNING user_id, username, email, role';
+        const values = [username, hashedPassword, email, role];
+        const result = await dbClient.query(query, values);
+        return result.rows[0];
+    } finally {
+        dbClient.release();
+    }
     // Returns an object with: user_id, username, email, role
 };
 
