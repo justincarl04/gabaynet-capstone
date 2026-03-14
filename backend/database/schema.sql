@@ -40,3 +40,25 @@ CREATE TABLE IF NOT EXISTS reports (
     submitted_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
+
+-- SEED CATEGORIES
+INSERT INTO categories (category_id, name, description)
+VALUES
+  (1, 'Infrastructure & Mainentance', 'For physical damage or public facility issues'),
+  (2, 'Environment & Waste', 'For environmental or sanitation concerns'),
+  (3, 'Utilities & Resources', 'Issues related to basic services'),
+  (4, 'Traffic & Parking', 'For vehicle-related problems inside the subdivision'),
+  (5, 'Animals & Pests', 'For stray/wild animals or pest infestations'),
+  (6, 'Safety & Security', 'Anything that may threaten residents'),
+  (7, 'Other', 'For anything that does not fall in other categories')
+ON CONFLICT (category_id) DO UPDATE
+  SET name = EXCLUDED.name,
+      description = EXCLUDED.description;
+
+-- SEED FIRST SUPER ADMIN USER
+INSERT INTO users (username, email, password_hash, role)
+VALUES
+  ('SysAdmin', 'gabaynet@gmail.com', '$2b$12$9sR7YE5SrWK9Sw8bqtMCGuVxwVD7ooc1ecKjVFSxzjKfQX3ykzEuG', 'super_admin')
+ON CONFLICT (email) DO UPDATE
+  SET username = EXCLUDED.username,
+      role = EXCLUDED.role;
