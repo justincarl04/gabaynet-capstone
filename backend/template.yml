@@ -164,14 +164,17 @@ Resources:
             - Effect: Allow
               Action: ssm:GetParameter
               Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/gabaynet/reporting-platform/*"
-        - S3CrudPolicy:
-            BucketName: !Ref ReportingPlatformBucket
-        - Statement:
+            - Effect: Allow
+              Action:
+                - kms:Decrypt
+              Resource: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/aws/ssm"
             - Effect: Allow
               Action:
                 - "rds-db:connect"
                 - "rds:DescribeDBInstances"
               Resource: "*"
+        - S3CrudPolicy:
+            BucketName: !Ref ReportingPlatformBucket
       VpcConfig:
         SecurityGroupIds:
           - !Ref LambdaSecurityGroup
@@ -209,6 +212,10 @@ Resources:
             - Effect: Allow
               Action: ssm:GetParameter
               Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/gabaynet/reporting-platform/*"
+            - Effect: Allow
+              Action:
+                - kms:Decrypt
+              Resource: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/aws/ssm"
       VpcConfig:
         SecurityGroupIds:
           - !Ref LambdaSecurityGroup

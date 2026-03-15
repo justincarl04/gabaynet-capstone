@@ -8,21 +8,20 @@ async function loadSecrets() {
       DB_PASS: process.env.DB_PASS,
       JWT_SECRET: process.env.JWT_SECRET,
     };
-
     process.env.DB_PASS = secrets.DB_PASS;
     process.env.JWT_SECRET = secrets.JWT_SECRET;
-
     return secrets;
   }
 
   if (!secrets) {
     secrets = {
       DB_PASS: await getSecret(process.env.DB_PASS_PARAM),
-      JWT_SECRET: await getSecret(process.env.JWT_SECRET_PARAM),
+      JWT_SECRET: process.env.JWT_SECRET_PARAM
+        ? await getSecret(process.env.JWT_SECRET_PARAM)
+        : null,
     };
-
     process.env.DB_PASS = secrets.DB_PASS;
-    process.env.JWT_SECRET = secrets.JWT_SECRET;
+    if (secrets.JWT_SECRET) process.env.JWT_SECRET = secrets.JWT_SECRET;
   }
 
   return secrets;
