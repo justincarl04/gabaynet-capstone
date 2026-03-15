@@ -1,8 +1,12 @@
 require('dotenv').config();
 const app = require('./src/app');
+const { loadSecrets } = require('./config/secrets');
 
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-})
+loadSecrets().then(() => {
+    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+}).catch(err => {
+    console.error('Failed to load secrets:', err);
+    process.exit(1);
+});

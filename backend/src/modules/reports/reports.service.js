@@ -58,7 +58,14 @@ const getAllReports = async (query) => {
         order = '' 
     } = query;
 
-    const validSorts = ['submitted_at', 'report_id', 'status', 'title', 'category_name', 'handler_name']
+    const validSortMap = {
+        'submitted_at':  'r.submitted_at',
+        'report_id':     'r.report_id',
+        'status':        'r.status',
+        'title':         'r.title',
+        'category_name': 'c.name',
+        'handler_name':  'u.username',
+    } 
     const validOrders = ['asc', 'desc']
 
     let baseQuery = 'SELECT r.report_id, r.title, r.status, r.updated_at, r.submitted_at, c.name AS category_name, u.username AS handler_name, COUNT(*) OVER() AS total_count FROM reports r JOIN categories c ON r.category_id = c.category_id LEFT JOIN users u ON r.handler_id = u.user_id';
@@ -96,9 +103,10 @@ const getAllReports = async (query) => {
         baseQuery += ' WHERE ' + conditions.join(' AND ');
     }
     
-    if (!validOrders.includes(order.toLowerCase())) { order = 'desc'; }
-    if (!validSorts.includes(sort)) { sort = 'submitted_at'; }
-    baseQuery += ` ORDER BY r.${sort} ${order} LIMIT $${values.length + 1} OFFSET $${values.length + 2}`;
+    const safeOrder = validOrders.includes(order.toLowerCase()) ? order.toLowerCase() : 'desc';
+    const safeSort = validSortMap[sort] ?? sortColumnMap['submitted_at']; 
+
+    baseQuery += ` ORDER BY ${safeSort} ${safeOrder} LIMIT $${values.length + 1} OFFSET $${values.length + 2}`;
     values.push(limit, (page - 1) * limit);
 
     try{

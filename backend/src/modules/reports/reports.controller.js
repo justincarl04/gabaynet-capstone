@@ -25,7 +25,7 @@ const getAllReports = async (req, res, next) => {
     logger.debug("Fetching all reports"); // DEBUG
     try {
         const reports = await reportService.getAllReports(req.query);
-
+        
         res.json(reports);
     } catch (err) {
         err.userMessage = 'Failed to fetch reports.';

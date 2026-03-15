@@ -2,7 +2,6 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
-const { loadSecrets } = require('./config/secrets');
 
 const { getPool } = require('./config/db');
 const logger = require('./utils/logger');
@@ -15,11 +14,6 @@ const reportRoutes = require('./modules/reports/reports.routes');
 const stream = {
     write: (message) => logger.info(message.trim()),
 };
-
-loadSecrets().catch((err) => {
-    logger.error('Failed to load secrets: ', err);
-    process.exit(1);
-});
 
 app.use(cors());
 app.use(helmet());
