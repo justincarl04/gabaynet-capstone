@@ -31,7 +31,7 @@ const createReport = async (data, fileData) => {
         if (fileData) {
             await s3.send(new DeleteObjectCommand({
                 Bucket: process.env.AWS_BUCKET_NAME,
-                Key: fileData.key
+                Key: image_url
             }));
             logger.info("Deleted uploaded file from S3 due to error during report creation: ", fileData.key); // DEBUG
         }
@@ -96,8 +96,8 @@ const getAllReports = async (query) => {
         baseQuery += ' WHERE ' + conditions.join(' AND ');
     }
     
-    if (!validOrders.find(order)){ order = 'desc' }
-    if (!validSorts.find(sort)){ sort = 'submitted_at' }
+    if (!validOrders.includes(order.toLowerCase())) { order = 'desc'; }
+    if (!validSorts.includes(sort)) { sort = 'submitted_at'; }
     baseQuery += ` ORDER BY r.${sort} ${order} LIMIT $${values.length + 1} OFFSET $${values.length + 2}`;
     values.push(limit, (page - 1) * limit);
 

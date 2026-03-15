@@ -7,14 +7,9 @@ const newReport = async (req, res, next) => {
         return res.status(400).json({ message: 'Title and Category are required.' });
     }
 
-    const reportData = {
-        ...req.body,
-        image_url: req.file ? (req.file.location || `/uploads/${req.file.filename}`) : null
-    };
-
-    logger.debug("Creating report with data: ", reportData); // DEBUG
+    logger.debug("Creating report with data: ", req.body); // DEBUG
     try {
-        const report = await reportService.createReport(reportData, req.file);
+        const report = await reportService.createReport(req.body, req.file);
         res.status(201).json(report);
     } catch (err) {
         if (err.code === '23503') { 
