@@ -1,0 +1,13 @@
+version = 0.1
+
+[default.deploy.parameters]
+stack_name = "gn-reporting"
+resolve_s3 = true
+s3_prefix = "gn-reporting"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "DBName=\"reporting_platform_db\" DBUsername=\"postgres\""
+image_repositories = []
+
+[default.global.parameters]
+region = "ap-southeast-1"

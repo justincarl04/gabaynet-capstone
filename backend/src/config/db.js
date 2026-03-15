@@ -17,6 +17,7 @@ function createPool() {
     database: process.env.DB_NAME,
     password: process.env.DB_PASS,
     port: process.env.DB_PORT,
+    max: 3,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 2000,
   });

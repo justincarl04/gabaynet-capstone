@@ -1,6 +1,6 @@
-const AWS = require('aws-sdk');
+const { S3Client } = require("@aws-sdk/client-s3")
 
-const s3 = new AWS.S3({
+const s3 = new S3Client({
     region: process.env.AWS_REGION
 });
 

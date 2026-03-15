@@ -62,3 +62,10 @@ VALUES
 ON CONFLICT (email) DO UPDATE
   SET username = EXCLUDED.username,
       role = EXCLUDED.role;
+
+-- INDEXES
+CREATE INDEX IF NOT EXISTS idx_reports_filters
+ON reports (category_id, status, submitted_at);
+
+CREATE INDEX idx_reports_submitted
+ON reports (submitted_at DESC);

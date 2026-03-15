@@ -1,20 +1,34 @@
 const { getPool } = require('../../config/db');
 const logger = require('../../utils/logger');
-
+const { generateSignedUrl } = require('../../utils/s3SignedUrl');
 const { DeleteObjectCommand } = require('@aws-sdk/client-s3');
-const s3 = require('../../config/s3');
+const { uploadFile } = require("../../utils/s3Upload");
+const s3 = require("../../config/s3");
 
 const createReport = async (data, fileData) => {
     const pool = getPool();
     const client = await pool.connect();
     try{
+        if (fileData) {
+            image_url = await uploadFile(fileData);
+        }
+        
         const { title, description, category_id, location, image_url, reporter_contact } = data;
         
         const query = 'INSERT INTO reports (title, description, category_id, location, image_url, reporter_contact) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *';
         const values = [title, description, category_id, location, image_url, reporter_contact];
 
         const result = await client.query(query, values);
-        return result.rows[0];
+        const report = result.rows[0];
+
+        if (report.image_url) {
+            const key = report.image_url.replace(
+                `https://${process.env.AWS_BUCKET_NAME}.s3.amazonaws.com/`, ''
+            );
+            report.image_url = await generateSignedUrl(key);
+        }
+
+        return report;
     } catch (err) {
         if (fileData) {
             await s3.send(new DeleteObjectCommand({

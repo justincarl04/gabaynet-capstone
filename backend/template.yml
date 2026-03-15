@@ -18,6 +18,50 @@ Parameters:
     Description: Master password for the RDS instance (secret).
 
 Resources:
+  ReportingVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref ReportingVPC
+      CidrBlock: 10.0.1.0/24
+      AvailabilityZone: !Select [0, !GetAZs '']
+
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref ReportingVPC
+      CidrBlock: 10.0.2.0/24
+      AvailabilityZone: !Select [1, !GetAZs '']
+
+  RDSSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: RDS private subnet group
+      SubnetIds:
+        - !Ref PrivateSubnet1
+        - !Ref PrivateSubnet2
+
+  LambdaSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Lambda access
+      VpcId: !Ref ReportingVPC
+
+  RDSSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Postgre access
+      VpcId: !Ref ReportingVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 5432
+          ToPort: 5432
+          SourceSecurityGroupId: !Ref LambdaSecurityGroup  
+
   ReportingPlatformBucket:
     Type: AWS::S3::Bucket
     Properties:
@@ -40,13 +84,16 @@ Resources:
       StorageType: gp2
       AllocatedStorage: '20'
       MultiAZ: false
-      PubliclyAccessible: true
+      PubliclyAccessible: false
       Engine: postgres
-      EngineVersion: '16.1'
+      EngineVersion: '17.6'
       DBName: !Ref DBName
       MasterUsername: !Ref DBUsername
       MasterUserPassword: !Ref DBPassword
-      BackupRetentionPeriod: 0
+      BackupRetentionPeriod: 1
+      DBSubnetGroupName: !Ref RDSSubnetGroup
+      VPCSecurityGroups:
+        - !Ref RDSSecurityGroup
 
   ReportingPlatformAPI:
     Type: AWS::Serverless::Api
@@ -59,7 +106,7 @@ Resources:
     Properties:
       CodeUri: ./
       Handler: handler.handler
-      Runtime: nodejs24.x
+      Runtime: nodejs22.x
       Policies:
         - SSMParameterReadPolicy:
             ParameterName: "/gabaynet/reporting-platform/*"
@@ -71,6 +118,12 @@ Resources:
                 - "rds-db:connect"
                 - "rds:DescribeDBInstances"
               Resource: "*"
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroup
+        SubnetIds:
+          - !Ref PrivateSubnet1
+          - !Ref PrivateSubnet2
       Events:
         ApiEvent:
           Type: Api
@@ -87,6 +140,5 @@ Resources:
           DB_PORT: '5432'
           JWT_SECRET_PARAM: /gabaynet/reporting-platform/jwt-secret
           JWT_EXPIRES_IN: 2h
-          AWS_REGION: ap-southeast-1
           AWS_BUCKET_NAME: !Ref ReportingPlatformBucket
           NODE_ENV: production
