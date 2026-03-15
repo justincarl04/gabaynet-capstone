@@ -187,3 +187,27 @@ Resources:
           JWT_EXPIRES_IN: 2h
           AWS_BUCKET_NAME: !Ref ReportingPlatformBucket
           NODE_ENV: production
+          
+  SeedDatabaseFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./
+      Handler: seed.handler
+      Runtime: nodejs22.x
+      Timeout: 30
+      Policies:
+        - SSMParameterReadPolicy:
+            ParameterName: "/gabaynet/reporting-platform/*"
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroup
+        SubnetIds:
+          - !Ref PrivateSubnet1
+      Environment:
+        Variables:
+          DB_USER: !Ref DBUsername
+          DB_HOST: !GetAtt ReportingPlatformRDS.Endpoint.Address
+          DB_NAME: !Ref DBName
+          DB_PASS_PARAM: /gabaynet/reporting-platform/db-password
+          DB_PORT: '5432'
+          NODE_ENV: production

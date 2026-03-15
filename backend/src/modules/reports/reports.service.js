@@ -28,7 +28,7 @@ const createReport = async (data, fileData) => {
 
         return report;
     } catch (err) {
-        if (fileData) {
+        if (image_url) {
             await s3.send(new DeleteObjectCommand({
                 Bucket: process.env.AWS_BUCKET_NAME,
                 Key: image_url

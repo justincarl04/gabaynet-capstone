@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS reports (
 -- SEED CATEGORIES
 INSERT INTO categories (name, description)
 VALUES
-  ('Infrastructure & Mainentance', 'For physical damage or public facility issues'),
+  ('Infrastructure & Maintenance', 'For physical damage or public facility issues'),
   ('Environment & Waste', 'For environmental or sanitation concerns'),
   ('Utilities & Resources', 'Issues related to basic services'),
   ('Traffic & Parking', 'For vehicle-related problems inside the subdivision'),
