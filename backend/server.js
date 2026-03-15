@@ -1,6 +1,6 @@
 require('dotenv').config();
 const app = require('./src/app');
-const { loadSecrets } = require('./config/secrets');
+const { loadSecrets } = require('./src/config/secrets');
 
 const PORT = process.env.PORT || 3000;
 

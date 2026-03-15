@@ -8,8 +8,8 @@ const s3 = require("../../config/s3");
 const createReport = async (data, fileData) => {
     const pool = getPool();
     const client = await pool.connect();
+    let image_url = null;
     try{
-        let image_url = null;
         if (fileData) {
             image_url = await uploadFile(fileData);
         }
@@ -104,7 +104,7 @@ const getAllReports = async (query) => {
     }
     
     const safeOrder = validOrders.includes(order.toLowerCase()) ? order.toLowerCase() : 'desc';
-    const safeSort = validSortMap[sort] ?? sortColumnMap['submitted_at']; 
+    const safeSort = validSortMap[sort] ?? validSortMap['submitted_at']; 
 
     baseQuery += ` ORDER BY ${safeSort} ${safeOrder} LIMIT $${values.length + 1} OFFSET $${values.length + 2}`;
     values.push(limit, (page - 1) * limit);

@@ -50,6 +50,11 @@ Resources:
     Properties:
       GroupDescription: Lambda access
       VpcId: !Ref ReportingVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          SourceSecurityGroupId: !Ref LambdaSecurityGroup
 
   RDSSecurityGroup:
     Type: AWS::EC2::SecurityGroup
