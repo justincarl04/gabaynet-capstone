@@ -51,7 +51,7 @@ VALUES
   ('Animals & Pests', 'For stray/wild animals or pest infestations'),
   ('Safety & Security', 'Anything that may threaten residents'),
   ('Other', 'For anything that does not fall in other categories')
-ON CONFLICT (category_id) DO UPDATE
+ON CONFLICT (name) DO UPDATE
   SET name = EXCLUDED.name,
       description = EXCLUDED.description;
 
@@ -67,5 +67,5 @@ ON CONFLICT (email) DO UPDATE
 CREATE INDEX IF NOT EXISTS idx_reports_filters
 ON reports (category_id, status, submitted_at);
 
-CREATE INDEX idx_reports_submitted
+CREATE INDEX IF NOT EXISTS idx_reports_submitted
 ON reports (submitted_at DESC);

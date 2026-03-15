@@ -1,31 +1,29 @@
 const { getPool } = require('../../config/db');
 const logger = require('../../utils/logger');
-const { generateSignedUrl } = require('../../utils/s3SignedUrl');
+const generateSignedUrl = require('../../utils/s3SignedUrl');
 const { DeleteObjectCommand } = require('@aws-sdk/client-s3');
-const { uploadFile } = require("../../utils/s3Upload");
+const uploadFile = require("../../utils/s3Upload");
 const s3 = require("../../config/s3");
 
 const createReport = async (data, fileData) => {
     const pool = getPool();
     const client = await pool.connect();
     try{
+        let image_url = null;
         if (fileData) {
             image_url = await uploadFile(fileData);
         }
-        
-        const { title, description, category_id, location, image_url, reporter_contact } = data;
+
+        const { title, description, category_id, location, reporter_contact } = data;
         
         const query = 'INSERT INTO reports (title, description, category_id, location, image_url, reporter_contact) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *';
         const values = [title, description, category_id, location, image_url, reporter_contact];
 
         const result = await client.query(query, values);
-        const report = result.rows[0];
+        let report = result.rows[0];
 
         if (report.image_url) {
-            const key = report.image_url.replace(
-                `https://${process.env.AWS_BUCKET_NAME}.s3.amazonaws.com/`, ''
-            );
-            report.image_url = await generateSignedUrl(key);
+            report.image_url = await generateSignedUrl(report.image_url);
         }
 
         return report;
@@ -59,6 +57,9 @@ const getAllReports = async (query) => {
         sort = 'submitted_at', 
         order = '' 
     } = query;
+
+    const validSorts = ['submitted_at', 'report_id', 'status', 'title', 'category_name', 'handler_name']
+    const validOrders = ['asc', 'desc']
 
     let baseQuery = 'SELECT r.report_id, r.title, r.status, r.updated_at, r.submitted_at, c.name AS category_name, u.username AS handler_name, COUNT(*) OVER() AS total_count FROM reports r JOIN categories c ON r.category_id = c.category_id LEFT JOIN users u ON r.handler_id = u.user_id';
     const conditions = [];
@@ -94,7 +95,9 @@ const getAllReports = async (query) => {
     if (conditions.length > 0) {
         baseQuery += ' WHERE ' + conditions.join(' AND ');
     }
-
+    
+    if (!validOrders.find(order)){ order = 'desc' }
+    if (!validSorts.find(sort)){ sort = 'submitted_at' }
     baseQuery += ` ORDER BY r.${sort} ${order} LIMIT $${values.length + 1} OFFSET $${values.length + 2}`;
     values.push(limit, (page - 1) * limit);
 
@@ -131,7 +134,12 @@ const getReportById = async (report_id) => {
             err.type = 'REPORT_NOT_FOUND';
             throw err;
         }
-        return result.rows[0];   
+        let report = result.rows[0];
+        if (report.image_url) {
+            report.image_url = await generateSignedUrl(report.image_url);
+        }
+
+        return report;   
     } finally {
         client.release();
     }
