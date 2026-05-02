@@ -1,6 +1,6 @@
 const { getPool } = require('../../config/db');
 const logger = require('../../utils/logger');
-const uploadFile, deleteFile, getSignedUrl = require("../../utils/s3Upload");
+const { uploadFile, deleteFile, getSignedUrl } = require("../../utils/storage");
 const s3 = require("../../config/s3");
 
 const createReport = async (data, fileData) => {
@@ -11,6 +11,8 @@ const createReport = async (data, fileData) => {
         if (fileData) {
             image_url = await uploadFile(fileData);
         }
+
+        throw error; // DEBUG
 
         const { title, description, category_id, location, reporter_contact } = data;
         
@@ -28,7 +30,7 @@ const createReport = async (data, fileData) => {
     } catch (err) {
         if (image_url) {
             await deleteFile(image_url);
-            logger.info("Deleted uploaded file from S3 due to error during report creation: ", fileData.key); // DEBUG
+            logger.info("Deleted uploaded file due to error during report creation: ", fileData.key); // DEBUG
         }
         throw err;
     } finally {
@@ -139,7 +141,7 @@ const getReportById = async (report_id) => {
         }
         let report = result.rows[0];
         if (report.image_url) {
-            report.image_url = await generateSignedUrl(report.image_url);
+            report.image_url = await getSignedUrl(report.image_url);
         }
 
         return report;   
