@@ -1,8 +1,6 @@
 const { getPool } = require('../../config/db');
 const logger = require('../../utils/logger');
-const generateSignedUrl = require('../../utils/s3SignedUrl');
-const { DeleteObjectCommand } = require('@aws-sdk/client-s3');
-const uploadFile = require("../../utils/s3Upload");
+const uploadFile, deleteFile, getSignedUrl = require("../../utils/s3Upload");
 const s3 = require("../../config/s3");
 
 const createReport = async (data, fileData) => {
@@ -23,16 +21,13 @@ const createReport = async (data, fileData) => {
         let report = result.rows[0];
 
         if (report.image_url) {
-            report.image_url = await generateSignedUrl(report.image_url);
+            report.image_url = await getSignedUrl(report.image_url);
         }
 
         return report;
     } catch (err) {
         if (image_url) {
-            await s3.send(new DeleteObjectCommand({
-                Bucket: process.env.AWS_BUCKET_NAME,
-                Key: image_url
-            }));
+            await deleteFile(image_url);
             logger.info("Deleted uploaded file from S3 due to error during report creation: ", fileData.key); // DEBUG
         }
         throw err;

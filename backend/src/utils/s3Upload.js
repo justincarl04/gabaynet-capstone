@@ -1,4 +1,4 @@
-const { PutObjectCommand } = require("@aws-sdk/client-s3");
+const { PutObjectCommand, DeleteObjectCommand } = require("@aws-sdk/client-s3");
 const s3 = require("../config/s3");
 
 async function uploadFile(file) {
@@ -16,4 +16,16 @@ async function uploadFile(file) {
   return key;
 }
 
-module.exports = uploadFile;
+async function deleteFile(key) {
+  await s3.send(
+    new DeleteObjectCommand({
+      Bucket: process.env.AWS_BUCKET_NAME,
+      Key: key
+    })
+  );
+}
+
+module.exports = {
+  uploadFile,
+  deleteFile
+};
