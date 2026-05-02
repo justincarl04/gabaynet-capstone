@@ -12,8 +12,6 @@ const createReport = async (data, fileData) => {
             image_url = await uploadFile(fileData);
         }
 
-        throw error; // DEBUG
-
         const { title, description, category_id, location, reporter_contact } = data;
         
         const query = 'INSERT INTO reports (title, description, category_id, location, image_url, reporter_contact) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *';
