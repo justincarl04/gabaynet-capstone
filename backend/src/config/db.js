@@ -17,9 +17,9 @@ function createPool() {
     database: process.env.DB_NAME,
     password: process.env.DB_PASS,
     port: process.env.DB_PORT,
-    ssl: {
+    ssl: process.env.NODE_ENV === 'production' ? {
       rejectUnauthorized: false,
-    },
+    } : false, 
     max: 3,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 2000,
